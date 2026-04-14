@@ -26,19 +26,23 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getSession validates the JWT locally (no network call) — more reliable
+  // in middleware than getUser() which makes a round-trip to Supabase.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
-  // Protect /transcribe — redirect to /login if not authenticated
-  if (!user && request.nextUrl.pathname.startsWith("/transcribe")) {
+  const path = request.nextUrl.pathname;
+  console.log("[middleware]", { path, hasSession: !!session, userId: user?.id ?? null, cookies: request.cookies.getAll().map(c => c.name) });
+
+  // Protect /transcribe
+  if (!user && path.startsWith("/transcribe")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
   // Redirect authenticated users away from /login
-  if (user && request.nextUrl.pathname === "/login") {
+  if (user && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/transcribe";
     return NextResponse.redirect(url);
