@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase-client";
 
 export default function LoginPage() {
@@ -10,11 +10,12 @@ export default function LoginPage() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Show error from URL param (e.g. ?error=auth_failed from callback)
-  const urlError = typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search).get("error")
-    : null;
-  const [error, setError] = useState(urlError ?? "");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const err = new URLSearchParams(window.location.search).get("error");
+    if (err) setError(err);
+  }, []);
 
   async function handleGoogle() {
     setError("");
