@@ -77,6 +77,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Log usage to Supabase (fire-and-forget, never block the response)
+  supabase.from("transcription_logs").insert({
+    user_id: user.id,
+    audio_duration_seconds: current.audio_duration ?? null,
+  }).then(() => {});
+
   // If paragraphs requested, fetch structured paragraphs
   if (paragraphs) {
     const paragraphsResponse = await client.transcripts.paragraphs(transcript.id);

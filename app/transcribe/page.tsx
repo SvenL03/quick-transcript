@@ -6,6 +6,7 @@ import { useState } from "react";
 import AudioDropzone from "@/components/AudioDropzone";
 import TranscriptSettings from "@/components/TranscriptSettings";
 import TranscriptView from "@/components/TranscriptView";
+import ProgressRing from "@/components/ProgressRing";
 
 type State = "upload" | "loading" | "result" | "error";
 
@@ -78,9 +79,8 @@ export default function TranscribePage() {
             )}
 
             {state === "loading" ? (
-              <div className="flex items-center justify-center gap-3 py-3">
-                <Spinner />
-                <span className="text-sm text-[#6B7280]">Transcribing…</span>
+              <div className="flex items-center justify-center py-4">
+                <ProgressRing isLoading={true} isComplete={false} />
               </div>
             ) : (
               <button
@@ -107,26 +107,5 @@ export default function TranscribePage() {
         )}
       </div>
     </div>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg
-      className="animate-spin"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-label="Transcribing audio"
-      role="status"
-    >
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#6B7280" strokeWidth="3" />
-      <path
-        className="opacity-75"
-        fill="#6B7280"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-      />
-    </svg>
   );
 }
