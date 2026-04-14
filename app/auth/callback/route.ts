@@ -5,15 +5,26 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const errorParam = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
   const next = searchParams.get("next") ?? "/transcribe";
 
-  // On Vercel, use the forwarded host so the redirect goes to the correct
-  // public domain rather than the internal deployment URL.
   const forwardedHost = request.headers.get("x-forwarded-host");
-  const base =
-    forwardedHost
-      ? `https://${forwardedHost}`
-      : origin;
+  const base = forwardedHost ? `https://${forwardedHost}` : origin;
+
+  // Log everything so we can diagnose from Vercel function logs
+  console.log("[auth/callback]", {
+    code: code ? `${code.slice(0, 8)}…` : null,
+    errorParam,
+    errorDescription,
+    base,
+    cookies: request.cookies.getAll().map((c) => c.name),
+  });
+
+  if (errorParam) {
+    console.error("[auth/callback] OAuth error from provider:", errorParam, errorDescription);
+    return NextResponse.redirect(`${base}/login?error=${encodeURIComponent(errorParam)}`);
+  }
 
   if (code) {
     const cookieStore = await cookies();
@@ -30,25 +41,32 @@ export async function GET(request: NextRequest) {
           },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-            // Collect cookies so we can attach them to the redirect response
             cookiesToSet.forEach((c) => pending.push(c));
           },
         },
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    console.log("[auth/callback] exchangeCodeForSession:", {
+      success: !error,
+      error: error?.message,
+      userId: data?.user?.id,
+      pendingCookies: pending.map((c) => c.name),
+    });
 
     if (!error) {
       const response = NextResponse.redirect(`${base}${next}`);
-      // Explicitly copy session cookies onto the redirect response —
-      // without this the session is lost before the next request.
       pending.forEach(({ name, value, options }) => {
         response.cookies.set(name, value, options ?? {});
       });
       return response;
     }
+
+    return NextResponse.redirect(`${base}/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  return NextResponse.redirect(`${base}/login?error=auth_failed`);
+  console.error("[auth/callback] No code and no error — unexpected state");
+  return NextResponse.redirect(`${base}/login?error=no_code`);
 }
