@@ -9,7 +9,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  // Show error from URL param (e.g. ?error=auth_failed from callback)
+  const urlError = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("error")
+    : null;
+  const [error, setError] = useState(urlError ?? "");
 
   async function handleGoogle() {
     setError("");
