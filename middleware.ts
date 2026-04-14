@@ -41,13 +41,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user && path.startsWith("/transcribe")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  if (user && path === "/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/transcribe";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
@@ -55,5 +49,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/transcribe/:path*", "/login"],
+  matcher: ["/transcribe/:path*"],
 };
